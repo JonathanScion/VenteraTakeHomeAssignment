@@ -1,0 +1,110 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Home page";
+}
+
+        <div class="container">
+            <form id="dataForm">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Input Numerical Value</th>
+                            <th>Input Unit of Measure</th>
+                            <th>Target Unit of Measure</th>
+                            <th>Student Response</th>
+                            <th>Output</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <tr>
+                            <td><input type="text"></td>
+                            <td><input type="text"></td>
+                            <td><input type="text"></td>
+                            <td><input type="text"></td>
+                            <td></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <br />
+                <div display: flex;>
+                  <button type="submit">Submit</button>
+                </div>
+            </form>
+        </div>
+
+    <script>
+    const tableBody = document.getElementById('tableBody');
+    const form = document.getElementById('dataForm');
+
+    const set1 = ["Kelvin", "Celsius", "Fahrenheit", "Rankine"];
+    const set2 = ["liters", "tablespoons", "cubic-inches", "cups", "cubic-feet", "gallons"];
+
+    function validateUnitSets(input1, input2) {
+        const value1InSet1 = set1.includes(input1.value);
+        const value1InSet2 = set2.includes(input1.value);
+        const value2InSet1 = set1.includes(input2.value);
+        const value2InSet2 = set2.includes(input2.value);
+
+        if ((value1InSet1 && value2InSet1) || (value1InSet2 && value2InSet2)) {
+            input1.style.color = 'black';
+            input2.style.color = 'black';
+        } else if (!value1InSet1 && !value1InSet2) {
+            input1.style.color = 'red';
+            input2.style.color = 'black';
+        } else if (!value2InSet1 && !value2InSet2) {
+            input2.style.color = 'red';
+            input1.style.color = 'black';
+        } else {
+            input1.style.color = 'red';
+            input2.style.color = 'red';
+        }
+    }
+
+    form.addEventListener('input', (e) => {
+        if (e.target.tagName === 'INPUT' && e.target.closest('tr').rowIndex === tableBody.rows.length) {
+            const newRow = tableBody.insertRow();
+            for (let i = 0; i < 5; i++) {
+                const cell = newRow.insertCell();
+                if (i < 4) {
+                    cell.innerHTML = '<input type="text" class="border p-2 w-full" />';
+                }
+            }
+        }
+        // Check if 'Input Numerical Value' is greater than 10
+        if (e.target.closest('td') && e.target.closest('td').cellIndex === 0) {
+            const inputValue = parseFloat(e.target.value);
+            const studentResponseCell = e.target.closest('tr').cells[3].firstChild;
+            if (inputValue > 10) {
+                studentResponseCell.style.color = 'red';
+            } else {
+                studentResponseCell.style.color = 'black';
+            }
+        }
+
+        // Check if 'Input Unit of Measure' or 'Target Unit of Measure' is being modified
+        const cellIndex = e.target.closest('td').cellIndex;
+        if (cellIndex === 1 || cellIndex === 2) {
+            const inputUnitCell = e.target.closest('tr').cells[1].firstChild;
+            const targetUnitCell = e.target.closest('tr').cells[2].firstChild;
+            validateUnitSets(inputUnitCell, targetUnitCell);
+        }
+    });
+
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const data = [];
+        for (let i = 0; i < tableBody.rows.length - 1; i++) {
+            const row = tableBody.rows[i];
+            const rowData = {
+                inputValue: row.cells[0].firstChild.value,
+                inputUnit: row.cells[1].firstChild.value,
+                targetUnit: row.cells[2].firstChild.value,
+                studentResponse: row.cells[3].firstChild.value
+            };
+            data.push(rowData);
+        }
+        // Send data to server
+        console.log(JSON.stringify(data));
+    });
+    </script>
