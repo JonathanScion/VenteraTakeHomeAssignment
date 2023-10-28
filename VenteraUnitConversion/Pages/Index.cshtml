@@ -22,7 +22,7 @@
                             <td><input type="text"></td>
                             <td><input type="text"></td>
                             <td><input type="text"></td>
-                            <td></td>
+                            <td><input type="text"></td>
                         </tr>
                     </tbody>
                 </table>
@@ -61,34 +61,85 @@
         }
     }
 
-    form.addEventListener('input', (e) => {
-        if (e.target.tagName === 'INPUT' && e.target.closest('tr').rowIndex === tableBody.rows.length) {
-            const newRow = tableBody.insertRow();
-            for (let i = 0; i < 5; i++) {
-                const cell = newRow.insertCell();
-                if (i < 4) {
-                    cell.innerHTML = '<input type="text" class="border p-2 w-full" />';
+        form.addEventListener('input', (e) => {
+            if (e.target.tagName === 'INPUT' && e.target.closest('tr').rowIndex === tableBody.rows.length) {
+                const newRow = tableBody.insertRow();
+                for (let i = 0; i < 5; i++) {
+                    const cell = newRow.insertCell();
+                    if (i < 4) {
+                        cell.innerHTML = '<input type="text" class="border p-2 w-full" />';
+                    }
+                }
+            }
+            /*
+            // Check if 'Input Numerical Value' is greater than 10 //!this to be removed
+            if (e.target.closest('td') && e.target.closest('td').cellIndex === 0) {
+                const inputValue = parseFloat(e.target.value);
+                const studentResponseCell = e.target.closest('tr').cells[3].firstChild;
+                if (inputValue > 10) {
+                    studentResponseCell.style.color = 'red';
+                } else {
+                    studentResponseCell.style.color = 'black';
+                }
+            }*/
+
+            // Check if 'Input Unit of Measure' or 'Target Unit of Measure' is being modified
+            const cellIndex = e.target.closest('td').cellIndex;
+
+            if (cellIndex === 1 || cellIndex === 2) {
+                const inputUnitCell = e.target.closest('tr').cells[1].firstChild;
+                const targetUnitCell = e.target.closest('tr').cells[2].firstChild;
+                validateUnitSets(inputUnitCell, targetUnitCell);
+            }
+
+            //check the actual values:
+            const inputNumericalValueCell = e.target.closest('tr').cells[0].firstChild;
+            const inputNumericalValue = inputNumericalValueCell.value;
+
+            console.log(`isNaN (inputNumericalValue) = ${isNaN(inputNumericalValue)}`)
+            console.log(inputNumericalValue)
+            if (isNaN(inputNumericalValue)) {
+                inputNumericalValueCell.style.color = 'red';
+                return;
+            }
+            //ok then, got a value
+            inputNumericalValueCell.style.color = 'black';
+
+            const inputUnitOfMeasure = e.target.closest('tr').cells[1].firstChild.value;
+            const targetUnitOfMeasure = e.target.closest('tr').cells[2].firstChild.value;
+            const studentResponseValue = e.target.closest('tr').cells[3].firstChild.value;
+            const outputCell = e.target.closest('tr').cells[4].firstChild;
+
+
+            const value1InSet1 = set1.includes(inputUnitOfMeasure);
+            const value1InSet2 = set2.includes(inputUnitOfMeasure);
+            const value2InSet1 = set1.includes(targetUnitOfMeasure);
+            const value2InSet2 = set2.includes(targetUnitOfMeasure);
+
+            if (value1InSet1 && value2InSet1) {
+                console.log(`theyre both temperatures: ${inputUnitOfMeasure}, ${targetUnitOfMeasure}`)
+                const correctConvertedValue = convertTemperature(inputNumericalValue, inputUnitOfMeasure, targetUnitOfMeasure);
+                console.log(`correct answer: ${correctConvertedValue}`)
+                if (studentResponseValue == correctConvertedValue) {
+                    outputCell.value = "Correct";
+                }
+                else {
+                    outputCell.value = "Incorrect";
+                }
+        } else {
+            if (value1InSet2 && value2InSet2) {
+                console.log(`theyre both values: ${inputUnitOfMeasure}, ${targetUnitOfMeasure}`)
+                const correctConvertedValue = convertVolume(inputNumericalValue, inputUnitOfMeasure, targetUnitOfMeasure)
+                console.log(`correct answer: ${correctConvertedValue}`)
+                if ( parseFloat(parseFloat(studentResponseValue).toFixed(2)) == parseFloat(parseFloat(correctConvertedValue).toFixed(2)) ) {
+                    outputCell.value = "Correct";
+                }
+                else {
+                    outputCell.value = "Incorrect";
                 }
             }
         }
-        // Check if 'Input Numerical Value' is greater than 10
-        if (e.target.closest('td') && e.target.closest('td').cellIndex === 0) {
-            const inputValue = parseFloat(e.target.value);
-            const studentResponseCell = e.target.closest('tr').cells[3].firstChild;
-            if (inputValue > 10) {
-                studentResponseCell.style.color = 'red';
-            } else {
-                studentResponseCell.style.color = 'black';
-            }
-        }
 
-        // Check if 'Input Unit of Measure' or 'Target Unit of Measure' is being modified
-        const cellIndex = e.target.closest('td').cellIndex;
-        if (cellIndex === 1 || cellIndex === 2) {
-            const inputUnitCell = e.target.closest('tr').cells[1].firstChild;
-            const targetUnitCell = e.target.closest('tr').cells[2].firstChild;
-            validateUnitSets(inputUnitCell, targetUnitCell);
-        }
     });
 
     form.addEventListener('submit', (e) => {
@@ -107,4 +158,75 @@
         // Send data to server
         console.log(JSON.stringify(data));
     });
+
+    //conversion stuff
+    function convertTemperature(value, fromUnit, toUnit) {
+        let convertedValue;
+
+        // First, convert the input value to Celsius for easier conversion
+        switch (fromUnit) {
+            case 'Kelvin':
+                value = value - 273.15;
+                break;
+            case 'Fahrenheit':
+                value = (value - 32) * 5 / 9;
+                break;
+            case 'Rankine':
+                value = (value - 491.67) * 5 / 9;
+                break;
+            case 'Celsius':
+                break;
+            default:
+                throw new Error('Invalid From Unit');
+        }
+
+        // Now, convert the Celsius value to the desired output unit
+        switch (toUnit) {
+            case 'Kelvin':
+                convertedValue = value + 273.15;
+                break;
+            case 'Fahrenheit':
+                convertedValue = (value * 9 / 5) + 32;
+                break;
+            case 'Rankine':
+                convertedValue = (value + 273.15) * 9 / 5;
+                break;
+            case 'Celsius':
+                convertedValue = value;
+                break;
+            default:
+                throw new Error('Invalid To Unit');
+        }
+
+        return convertedValue;
+    }
+
+    function convertVolume(value, fromUnit, toUnit) {
+        let convertedValue;
+
+        // Conversion constants (to liters)
+        const conversionRates = {
+            'liters': 1,
+            'tablespoons': 0.0147868,
+            'cubic-inches': 0.0163871,
+            'cups': 0.236588,
+            'cubic-feet': 28.3168,
+            'gallons': 3.78541
+        };
+
+        // Ensure the provided units are valid
+        if (!conversionRates[fromUnit] || !conversionRates[toUnit]) {
+            throw new Error('Invalid unit provided');
+        }
+
+        // Convert the input value to liters
+        let valueInLiters = value * conversionRates[fromUnit];
+
+        // Convert the liters value to the desired output unit
+        convertedValue = valueInLiters / conversionRates[toUnit];
+
+        return convertedValue;
+    }
+
     </script>
+
